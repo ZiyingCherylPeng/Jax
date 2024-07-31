@@ -7,10 +7,10 @@ from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 
 import streamlit as st
-st.set_page_config(page_title="LangChain: Chat with search", page_icon="🦜")
+st.set_page_config(page_title="Jax", page_icon="🦜")
 # st.image("C:/Users/zp111454/Desktop/Jax/images/Jax_photo.jpg",caption="This is Jax.")
 
-st.title("🦜 LangChain: Chat with search")
+st.title("🦜 Jax: Chat with search")
 
 openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
 

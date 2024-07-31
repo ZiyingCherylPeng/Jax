@@ -6,13 +6,19 @@ A simple Streamlit app that answers questions about an uploaded document via Ope
 
 ### How to run it on your own machine
 
-1. Install the requirements
+
+1. set up the vertial Python envirnment 
+   make a virtual environment: python3 -m venv myenv
+   activate virtual environment: 
+      Windows: myenv\Scripts\activate
+      MacOS/Linux: source myenv/bin/activate
+
+2. Install the requirements
 
    ```
    $ pip install -r requirements.txt
    ```
-
-2. Run the app
+3. Run the app
 
    ```
    $ streamlit run streamlit_app.py
