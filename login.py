@@ -26,7 +26,8 @@ def authentication_process(app):
     scopes = ["User.Read"]
     redirect_uri = st.secrets["REDIRECT_URI"]
     auth_url = app.get_authorization_request_url(scopes, redirect_uri=redirect_uri)
-    st.markdown(f"Please go to [this URL]({auth_url}) and authorize the app.")
+    st.link_button("Azure AD sign in", auth_url)
+    # st.markdown(f"Please go to [this URL]({auth_url}) and authorize the app.")
     if st.query_params.get("code"):
         st.session_state["auth_code"] = st.query_params.get("code")
         token_result = acquire_access_token(app, st.session_state.auth_code, scopes, redirect_uri)
@@ -46,4 +47,6 @@ def login_ui():
         st.session_state["authenticated"] = True
         st.session_state["display_name"] = user_data.get("displayName")
         st.rerun()
+
+
 
