@@ -39,7 +39,13 @@ def authentication_process(app):
 
 
 def login_ui():
-    st.title("Microsoft Authentication")
+    st.logo(
+        image="./images/logo.png",
+        link="https://www.cayenta.com/",
+        icon_image = None,)
+    
+    st.title("Welcome to Jax!")
+    st.write("Press the button to sign in.")
     app = initialize_app()
     user_data = authentication_process(app)
     if user_data:
