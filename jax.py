@@ -11,17 +11,15 @@ import streamlit as st
 st.set_page_config(page_title="Jax", page_icon="🐶")
 
 def main():
-    if "authenticated" not in st.session_state:
-        st.session_state["authenticated"] = False
-
-    if st.session_state["authenticated"]:
+    if st.session_state.get("authenticated",False):
         st.title("🐶 I am Jax!")
         # st.sidebar.write("welcome")
+        
         msgs = StreamlitChatMessageHistory()
         memory = ConversationBufferMemory(
             chat_memory=msgs, return_messages=True, memory_key="chat_history", output_key="output"
         )
-        if len(msgs.messages) == 0 or st.sidebar.button("Reset chat history"):
+        if len(msgs.messages) == 0 or st.sidebar.button("New Chat"):
             msgs.clear()
             msgs.add_ai_message("How are you?")
             st.session_state.steps = {}
@@ -68,4 +66,6 @@ def main():
         login_ui()  
 
 if __name__ == "__main__":
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
     main()
