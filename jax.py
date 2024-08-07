@@ -39,7 +39,7 @@ def main():
         if prompt := st.chat_input(placeholder="Tell me something about Cayenta."):
             st.chat_message("user").write(prompt)
 
-            llm = llm = AzureChatOpenAI(
+            llm = AzureChatOpenAI(
                 azure_endpoint=st.secrets["AZURE_ENDPOINT"],
                 openai_api_key=st.secrets["OPENAI_API_KEY"],
                 azure_deployment=st.secrets["AZURE_DEPLOYMENT"],
