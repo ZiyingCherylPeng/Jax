@@ -49,10 +49,12 @@ def login_ui():
     app = initialize_app()
     user_data = authentication_process(app)
     if user_data:
+        # print("User id:",user_data["id"])
         st.write("Welcome, ", user_data.get("displayName"))
         st.session_state["authenticated"] = True
         st.session_state["display_name"] = user_data.get("displayName")
+        st.session_state["user_id"] = user_data.get("id")
         st.rerun()
-
+        
 
 

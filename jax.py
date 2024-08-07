@@ -13,8 +13,8 @@ st.set_page_config(page_title="Jax", page_icon="🐶")
 def main():
     if st.session_state.get("authenticated",False):
         st.title("🐶 I am Jax!")
-        # st.sidebar.write("welcome")
-        
+        st.sidebar.write("Welcome,", st.session_state["display_name"])
+        # st.sidebar.write("Your id is:", st.session_state["user_id"])
         msgs = StreamlitChatMessageHistory()
         memory = ConversationBufferMemory(
             chat_memory=msgs, return_messages=True, memory_key="chat_history", output_key="output"
