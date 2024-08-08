@@ -10,7 +10,7 @@ import streamlit as st
 import psycopg2
 from datetime import datetime
 import uuid
-from database import store_conversation
+from database import store_conversation, get_conversations, get_messages,get_button_label
 
 conn = psycopg2.connect(
     dbname=st.secrets["DBNAME"],
@@ -102,7 +102,19 @@ def main():
                 # ''', (st.session_state["conversation_id"], st.session_state["user_id"], datetime.now(), 'ai', response["output"]))
                 # conn.commit()
                 store_conversation(st.session_state["conversation_id"], st.session_state["user_id"],datetime.now(), msg.type, response["output"])
-
+        st.sidebar.write("Chat History")
+        conversations_id = get_conversations(st.session_state["user_id"])
+        for conversation_id in conversations_id:
+            # st.sidebar.button(get_button_label(conversation_id))
+            if st.sidebar.button(get_button_label(conversation_id[0],get_messages(conversation_id[0])[0][1])):
+                msgs.clear()
+                messages = get_messages(conversation_id[0])
+                for message in messages:
+                    if message[0] == 'human':
+                        msgs.add_user_message(message[1])
+                    else:
+                        msgs.add_ai_message(message[1])
+                st.session_state["conversation_id"] = conversation_id[0]
 
     else:
         login_ui()  
