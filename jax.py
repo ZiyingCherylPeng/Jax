@@ -9,9 +9,8 @@ from login import login_ui
 import streamlit as st
 import psycopg2
 from datetime import datetime
-import psycopg2
 import uuid
-from datetime import datetime
+from database import store_conversation
 
 conn = psycopg2.connect(
     dbname=st.secrets["DBNAME"],
@@ -54,22 +53,23 @@ def main():
                 st.write(msg.content)
 
                 # store conversation history
-                cursor.execute('''
-                    INSERT INTO chat_history (conversation_id, user_id, timestamp, message_type, message_content)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (st.session_state["conversation_id"], st.session_state["user_id"], datetime.now(), msg.type, msg.content))
-                conn.commit()
+                # cursor.execute('''
+                #     INSERT INTO chat_history (conversation_id, user_id, timestamp, message_type, message_content)
+                #     VALUES (%s, %s, %s, %s, %s)
+                # ''', (st.session_state["conversation_id"], st.session_state["user_id"], datetime.now(), msg.type, msg.content))
+                # conn.commit()
 
 
         if prompt := st.chat_input(placeholder="Tell me something about Cayenta."):
             st.chat_message("user").write(prompt)
 
-            # 存储用户输入到数据库
-            cursor.execute('''
-                INSERT INTO chat_history (conversation_id, user_id, timestamp, message_type, message_content)
-                VALUES (%s, %s, %s, %s, %s)
-            ''', (st.session_state["conversation_id"], st.session_state["user_id"], datetime.now(), 'human', prompt))
-            conn.commit()
+            # stroe user input to database
+            # cursor.execute('''
+            #     INSERT INTO chat_history (conversation_id, user_id, timestamp, message_type, message_content)
+            #     VALUES (%s, %s, %s, %s, %s)
+            # ''', (st.session_state["conversation_id"], st.session_state["user_id"], datetime.now(), 'human', prompt))
+            # conn.commit()
+            store_conversation(st.session_state["conversation_id"], st.session_state["user_id"],datetime.now(), 'human', prompt)
 
             llm = AzureChatOpenAI(
                 azure_endpoint=st.secrets["AZURE_ENDPOINT"],
@@ -95,12 +95,13 @@ def main():
                 st.write(response["output"])
                 st.session_state.steps[str(len(msgs.messages) - 1)] = response["intermediate_steps"]
 
-                # 存储AI回复到数据库
-                cursor.execute('''
-                    INSERT INTO chat_history (conversation_id, user_id, timestamp, message_type, message_content)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (st.session_state["conversation_id"], st.session_state["user_id"], datetime.now(), 'ai', response["output"]))
-                conn.commit()
+                # store AI response to database
+                # cursor.execute('''
+                #     INSERT INTO chat_history (conversation_id, user_id, timestamp, message_type, message_content)
+                #     VALUES (%s, %s, %s, %s, %s)
+                # ''', (st.session_state["conversation_id"], st.session_state["user_id"], datetime.now(), 'ai', response["output"]))
+                # conn.commit()
+                store_conversation(st.session_state["conversation_id"], st.session_state["user_id"],datetime.now(), msg.type, response["output"])
 
 
     else:
