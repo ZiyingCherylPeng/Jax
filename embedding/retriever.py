@@ -4,6 +4,8 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import AzureChatOpenAI
 from langchain_core.runnables import Runnable
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationBufferMemory
 
 llm = AzureChatOpenAI(
     azure_endpoint="https://aais-cay-jax-p02.openai.azure.com/",
@@ -14,7 +16,7 @@ llm = AzureChatOpenAI(
 
 retriever = vectorstore.as_retriever(
     search_type = "similarity",
-    search_kwargs={'k': 1},
+    search_kwargs={'k': 3},
 )
 
 system_prompt = (
@@ -33,9 +35,30 @@ prompt = ChatPromptTemplate.from_messages(
         ("human", "{input}"),
     ]
 )
-
 question_answer_chain = create_stuff_documents_chain(llm, prompt)
 rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-
-
 print(rag_chain.invoke({"input":"What is Time Entry?"}))
+
+# QUESTION_PROMPT  = ChatPromptTemplate.from_template("""
+#     Given the following conversation and a follow-up question, rephrase the follow-up question to be a standalone question.
+#     This is a conversation with a human. Answer the questions you get based on the knowledge you have.
+#     If you don't know the answer, just say that you don't, don't try to make up an answer.
+
+#     Chat History:
+#     {chat_history}
+#     Follow Up Input: {question}
+#     Standalone question:
+#     """)
+
+
+
+# qa = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever,
+#                                             condense_question_prompt=QUESTION_PROMPT,
+#                                             return_source_documents=True, verbose=False)
+# chat_history = """
+# """
+# question = "What is Time Entry?"
+
+# # Invoke the chain and print the output
+# result = qa.invoke({"question": question, "chat_history": chat_history})
+# print(result)
