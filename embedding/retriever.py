@@ -7,6 +7,10 @@ from langchain_core.runnables import Runnable
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
 llm = AzureChatOpenAI(
     azure_endpoint="https://aais-cay-jax-p02.openai.azure.com/",
     api_key="cb9b2e2451eb4a639730e6e8ea111e68",
@@ -37,7 +41,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 question_answer_chain = create_stuff_documents_chain(llm, prompt)
 rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-print(rag_chain.invoke({"input":"What is Time Entry?"}))
+# print(rag_chain.invoke({"input":"What is Time Entry?"}))
 
 # QUESTION_PROMPT  = ChatPromptTemplate.from_template("""
 #     Given the following conversation and a follow-up question, rephrase the follow-up question to be a standalone question.
@@ -62,3 +66,23 @@ print(rag_chain.invoke({"input":"What is Time Entry?"}))
 # # Invoke the chain and print the output
 # result = qa.invoke({"question": question, "chat_history": chat_history})
 # print(result)
+
+
+store = {}
+
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
+
+
+conversational_rag_chain = RunnableWithMessageHistory(
+    rag_chain,
+    get_session_history,
+    input_messages_key="input",
+    history_messages_key="chat_history",
+    output_messages_key="answer",
+)
+
+print(conversational_rag_chain.invoke({"input":"What is Time Entry?"}))

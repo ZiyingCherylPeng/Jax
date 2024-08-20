@@ -8,7 +8,7 @@ import streamlit as st
 def create_connection_pool():
     return psycopg2.pool.SimpleConnectionPool(
         1,  
-        10,  
+        20,  
         dbname=st.secrets["DBNAME_CONVERSATION"],
         user=st.secrets["DBUSER"],
         password=st.secrets["DBPASSWORD"],
@@ -29,10 +29,21 @@ class DatabaseConnection:
         return self.cursor
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cursor.close()
-        self.connection_pool.putconn(self.conn)
+        if exc_type:  
+            self.conn.rollback()  
+        else:
+            self.conn.commit()  
+
+        self.cursor.close() 
+        if self.conn:
+            try:
+                self.connection_pool.putconn(self.conn, close=True)  
+            except Exception as e:
+                print(f"Error returning connection to pool: {e}")  
+
 
 connection_pool = create_connection_pool()
+
 
 def store_conversation(conversation_id, user_id, timestamp, message_type, message_content):
     with DatabaseConnection(connection_pool) as cursor:

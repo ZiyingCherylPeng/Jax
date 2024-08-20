@@ -10,17 +10,48 @@ import streamlit as st
 import psycopg2
 from datetime import datetime
 import uuid
-from database import store_conversation, get_conversations, get_messages,get_button_label
-from vector import load_data, split_document, make_embeddings, make_vectorstore, make_chain
+from database import store_conversation, get_conversations, get_messages, get_button_label
+from vector import load_data, split_document, make_embeddings, make_vectorstore, make_chain, vectorstore_exists, load_existing_vectorstore, build_retriever
+import os
+
+def process_files(directory):
+    all_docs = []
+    for filename in os.listdir(directory):
+        if filename.endswith(".pdf"):
+            file_path = os.path.join(directory, filename)
+            data = load_data(file_path)
+            doc = split_document(data)
+            all_docs.extend(doc)
+    return all_docs    
+
+
+# def init_rag_chain():
+#     # data = load_data("./documents/Cayenta Time Manager Handout with Icons Replaced.pdf")
+#     if "rag_chain" not in st.session_state: 
+#         directory = "./documents/"
+#         all_docs = process_files(directory)
+#         embeddings = make_embeddings()
+#         if not vectorstore_exists("Time_Entry"):
+#             vectorstore = make_vectorstore(embeddings, 
+#                                         st.secrets["PGVECTOR_CONNECTION_STRING"], 
+#                                         "Time_Entry")
+#         else:
+#             vectorstore = load_existing_vectorstore("Time_Entry", st.secrets["PGVECTOR_CONNECTION_STRING"])
+#             vectorstore.set_embeddings(embeddings) 
+#         st.session_state.rag_chain = make_chain(all_docs,vectorstore)
+#     return st.session_state.rag_chain
+
 
 def init_rag_chain():
-    data = load_data("./documents/Cayenta Time Manager Handout with Icons Replaced.pdf")
-    doc = split_document(data)
+    # data = load_data("./documents/Cayenta Time Manager Handout with Icons Replaced.pdf")
+    directory = "./documents/"
+    all_docs = process_files(directory)
     embeddings = make_embeddings()
     vectorstore = make_vectorstore(embeddings, 
-                                   st.secrets["PGVECTOR_CONNECTION_STRING"], 
-                                   "time_manager")
-    rag_chain = make_chain(doc, vectorstore)
+                                    st.secrets["PGVECTOR_CONNECTION_STRING"],"Time_Entry")
+    retriever = build_retriever(vectorstore)
+
+    rag_chain = make_chain(retriever=retriever)
     return rag_chain
 
 rag_chain = init_rag_chain()
@@ -28,15 +59,16 @@ rag_chain = init_rag_chain()
 st.set_page_config(page_title="Jax", page_icon="🐶")
 
 def main():
+    
     if st.session_state.get("authenticated",False):
         
         st.title("🐶 I am Jax!")
         st.sidebar.write("Welcome,", st.session_state["display_name"])
         # st.sidebar.write("Your id is:", st.session_state["user_id"])
         msgs = StreamlitChatMessageHistory()
-        memory = ConversationBufferMemory(
-            chat_memory=msgs, return_messages=True, memory_key="chat_history", output_key="output"
-        )
+        # memory = ConversationBufferMemory(
+        #     chat_memory=msgs, return_messages=True, memory_key="chat_history", output_key="output"
+        # )
 
         if len(msgs.messages) == 0 or st.sidebar.button("New Chat"):
             msgs.clear()
@@ -60,13 +92,6 @@ def main():
         if prompt := st.chat_input(placeholder="Tell me something about Cayenta."):
             st.chat_message("user").write(prompt)
             store_conversation(st.session_state["conversation_id"], st.session_state["user_id"],datetime.now(), 'human', prompt)
-
-            # llm = AzureChatOpenAI(
-            #     azure_endpoint=st.secrets["AZURE_ENDPOINT"],
-            #     openai_api_key=st.secrets["OPENAI_API_KEY"],
-            #     azure_deployment=st.secrets["AZURE_DEPLOYMENT"],
-            #     openai_api_version=st.secrets["OPENAI_API_VERSION"],
-            #     )
             
             # tools = [DuckDuckGoSearchRun(name="Search")]
             # chat_agent = ConversationalChatAgent.from_llm_and_tools(llm=llm, tools=tools)
@@ -85,10 +110,16 @@ def main():
             #     response = executor.invoke(prompt, cfg)
             #     st.write(response["output"])
             #     st.session_state.steps[str(len(msgs.messages) - 1)] = response["intermediate_steps"]
-            response = rag_chain.invoke({"input":prompt})
+
+            session_id = st.session_state["conversation_id"] 
+            response = rag_chain.invoke({"input":prompt},
+                                        config={"configurable":{"session_id":session_id}})
+            
+            msgs.add_user_message(prompt)
 
             with st.chat_message("assistant"):
                 st.write(response['answer']) 
+                msgs.add_ai_message(response['answer'])
 
             store_conversation(st.session_state["conversation_id"], st.session_state["user_id"],datetime.now(), msg.type, response["answer"])
 
@@ -105,6 +136,7 @@ def main():
                     else:
                         msgs.add_ai_message(message[1])
                 st.session_state["conversation_id"] = conversation_id[0]
+                st.rerun()
         
     else:
         login_ui()  
