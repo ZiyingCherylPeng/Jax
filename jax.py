@@ -7,23 +7,12 @@ from langchain_core.runnables import RunnableConfig
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from login import login_ui
 import streamlit as st
-import psycopg2
 from datetime import datetime
 import uuid
-from database import store_conversation, get_conversations, get_messages, get_button_label
-from vector import load_data, split_document, make_embeddings, make_vectorstore, make_chain, vectorstore_exists, load_existing_vectorstore, build_retriever
+from database_api import store_conversation, get_conversations, get_messages, get_button_label
+from vector_api import load_data, split_document, make_embeddings, make_vectorstore, make_chain, build_retriever, vectorstore_exists, load_existing_vectorstore, process_files
 import os
-
-def process_files(directory):
-    all_docs = []
-    for filename in os.listdir(directory):
-        if filename.endswith(".pdf"):
-            file_path = os.path.join(directory, filename)
-            data = load_data(file_path)
-            doc = split_document(data)
-            all_docs.extend(doc)
-    return all_docs    
-
+from streamlit_extras.mention import mention
 
 # def init_rag_chain():
 #     # data = load_data("./documents/Cayenta Time Manager Handout with Icons Replaced.pdf")
@@ -43,16 +32,16 @@ def process_files(directory):
 
 
 def init_rag_chain():
-    # data = load_data("./documents/Cayenta Time Manager Handout with Icons Replaced.pdf")
     directory = "./documents/"
-    all_docs = process_files(directory)
-    embeddings = make_embeddings()
-    vectorstore = make_vectorstore(embeddings, 
-                                    st.secrets["PGVECTOR_CONNECTION_STRING"],"Time_Entry")
-    retriever = build_retriever(vectorstore)
+    if 'rag_chain' not in st.session_state:
+        # all_docs = process_files(directory)
+        embeddings = make_embeddings()
+        vectorstore = make_vectorstore(embeddings, 
+                                        st.secrets["PGVECTOR_CONNECTION_STRING"],"Time_Entry")
+        retriever = build_retriever(vectorstore)
 
-    rag_chain = make_chain(retriever=retriever)
-    return rag_chain
+        st.session_state['rag_chain'] = make_chain(retriever)
+    return st.session_state['rag_chain']
 
 rag_chain = init_rag_chain()
 
@@ -112,14 +101,20 @@ def main():
             #     st.session_state.steps[str(len(msgs.messages) - 1)] = response["intermediate_steps"]
 
             session_id = st.session_state["conversation_id"] 
-            response = rag_chain.invoke({"input":prompt},
+            response = rag_chain.invoke({"question":prompt},
                                         config={"configurable":{"session_id":session_id}})
+            # print(response)
             
             msgs.add_user_message(prompt)
-
+            # citation = "Cayenta Time Manager Handout with Icons Replaced.pdf"
             with st.chat_message("assistant"):
                 st.write(response['answer']) 
                 msgs.add_ai_message(response['answer'])
+                # if 'source_documents' in response and response['source_documents']:
+                #     for doc in response['source_documents']:
+                #         st.markdown(doc)
+                #         mention(doc)
+                    # st.write(citation)
 
             store_conversation(st.session_state["conversation_id"], st.session_state["user_id"],datetime.now(), msg.type, response["answer"])
 

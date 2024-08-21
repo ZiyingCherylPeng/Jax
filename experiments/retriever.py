@@ -85,4 +85,4 @@ conversational_rag_chain = RunnableWithMessageHistory(
     output_messages_key="answer",
 )
 
-print(conversational_rag_chain.invoke({"input":"What is Time Entry?"}))
+print(conversational_rag_chain.invoke({"input":"Can you manually input time?"}))

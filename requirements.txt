@@ -7,3 +7,6 @@ langchain_core
 msal
 psycopg2-binary
 duckduckgo-search
+langchain_postgres
+pypdf
+streamlit_extras
