@@ -12,7 +12,7 @@ import uuid
 from database_api import store_conversation, get_conversations, get_messages, get_button_label
 from vector_api import load_data, split_document, make_embeddings, make_vectorstore, make_chain, build_retriever, vectorstore_exists, load_existing_vectorstore, process_files
 import os
-from streamlit_extras.mention import mention
+from streamlit_extras.stoggle import stoggle
 
 # def init_rag_chain():
 #     # data = load_data("./documents/Cayenta Time Manager Handout with Icons Replaced.pdf")
@@ -33,11 +33,13 @@ from streamlit_extras.mention import mention
 
 def init_rag_chain():
     directory = "./documents/"
+    collection_name = "Time_Entry"
     if 'rag_chain' not in st.session_state:
         # all_docs = process_files(directory)
         embeddings = make_embeddings()
         vectorstore = make_vectorstore(embeddings, 
-                                        st.secrets["PGVECTOR_CONNECTION_STRING"],"Time_Entry")
+                                        st.secrets["PGVECTOR_CONNECTION_STRING"],
+                                        collection_name)
         retriever = build_retriever(vectorstore)
 
         st.session_state['rag_chain'] = make_chain(retriever)
@@ -53,7 +55,6 @@ def main():
         
         st.title("🐶 I am Jax!")
         st.sidebar.write("Welcome,", st.session_state["display_name"])
-        # st.sidebar.write("Your id is:", st.session_state["user_id"])
         msgs = StreamlitChatMessageHistory()
         # memory = ConversationBufferMemory(
         #     chat_memory=msgs, return_messages=True, memory_key="chat_history", output_key="output"
@@ -103,25 +104,21 @@ def main():
             session_id = st.session_state["conversation_id"] 
             response = rag_chain.invoke({"question":prompt},
                                         config={"configurable":{"session_id":session_id}})
-            # print(response)
             
             msgs.add_user_message(prompt)
-            # citation = "Cayenta Time Manager Handout with Icons Replaced.pdf"
             with st.chat_message("assistant"):
                 st.write(response['answer']) 
                 msgs.add_ai_message(response['answer'])
-                # if 'source_documents' in response and response['source_documents']:
-                #     for doc in response['source_documents']:
-                #         st.markdown(doc)
-                #         mention(doc)
-                    # st.write(citation)
+                if 'source_documents' in response and response['source_documents']:
+                    for doc in response['source_documents']:
+                        # st.markdown(doc)
+                        stoggle(summary="Citation", content=doc)
 
             store_conversation(st.session_state["conversation_id"], st.session_state["user_id"],datetime.now(), msg.type, response["answer"])
 
         st.sidebar.write("Chat History")
         conversations_id = get_conversations(st.session_state["user_id"], limit=5)
         for conversation_id in conversations_id:
-            # st.sidebar.button(get_button_label(conversation_id))
             if st.sidebar.button(get_button_label(conversation_id[0])):
                 msgs.clear()
                 messages = get_messages(conversation_id[0])

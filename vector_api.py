@@ -140,7 +140,7 @@ def make_chain(retriever):
     memory = ConversationBufferMemory(
         memory_key='chat_history',
         output_key='answer',
-        return_messages=True
+        return_messages=True,
     )
     conversational_rag_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
